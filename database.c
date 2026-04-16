@@ -87,7 +87,7 @@ void update(hashTable *hash_table, uint32_t hash, uint32_t salary){
     curr->salary = salary;
 }
 
-void print(hashTable *hash_table){
+void print_table(hashTable *hash_table){
     hashRecord* curr = hash_table->head;
     printf("Current Database:\n");
     while(curr != NULL){
