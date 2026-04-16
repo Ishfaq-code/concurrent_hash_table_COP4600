@@ -61,6 +61,24 @@ void delete(hashTable *hash_table, uint32_t hash){
 
 }
 
+void search(hashTable *hash_table, uint32_t hash, const char* name){
+     hashRecord* curr = hash_table->head;
+    hashRecord* prev = NULL;
+
+    while (curr != NULL && curr->hash < hash){
+        prev = curr;
+        curr = curr->next;
+    }
+
+     if(curr == NULL || curr->hash > hash){
+        printf("%s not found.\n", name);
+        return;
+     }
+
+    printf("Found: %u,%s,%u\n", curr->hash, curr->name, curr->salary);
+
+}
+
 void update(hashTable *hash_table, uint32_t hash, uint32_t salary){
     hashRecord* curr = hash_table->head;
     hashRecord* prev = NULL;
