@@ -33,3 +33,29 @@ void insert(hashTable *hash_table, const char* name, uint32_t salary, int priori
     new_record->next = curr;
     printf("Inserted %u,%s,%u\n", new_record->hash, new_record->name, new_record->salary);
 }
+
+void delete(hashTable *hash_table, uint32_t hash){
+    hashRecord* curr = hash_table->head;
+    hashRecord* prev = NULL;
+
+    while (curr != NULL && curr->hash < hash){
+        prev = curr;
+        curr = curr->next;
+    }
+
+    if(curr == NULL || curr->hash > hash){
+        printf("Entry %u not deleted. Not in database.\n", hash);
+        return;
+    }
+
+    if(prev){
+        prev->next = curr->next;
+    }
+    else{
+        hash_table->head = curr->next;
+    }
+    
+    printf("Deleted record for %u,%s,%u\n", curr->hash, curr->name, curr->salary);
+    free(curr);
+
+}
