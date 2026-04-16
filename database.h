@@ -18,5 +18,6 @@ void insert(hashTable *hash_table, const char* name, uint32_t salary, int priori
 void delete(hashTable *hash_table, uint32_t hash);
 void update(hashTable *hash_table, uint32_t hash, uint32_t salary);
 void print_table(hashTable *hash_table);
+void search(hashTable *hash_table, uint32_t hash, const char* name);
 
 #endif

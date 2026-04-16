@@ -1,10 +1,146 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#define COMMANDS "commands.txt"
+#define MAX_LINE 256
 
 #include "database.h"
 #include "hash.h"
+#include "rwlock.h"
+
+typedef struct {
+    hashTable *table;
+    char command[16];
+    char name[100];
+    int priority;
+    uint32_t salary;
+    rwlock_t *mutex;
+} WorkerArgs;
+
+void* worker(void* args){
+    WorkerArgs *worker = (WorkerArgs *)args;
+
+    if (strcmp(worker->command, "insert") == 0) {
+        uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        rwlock_acquire_writelock(worker->mutex);
+        insert(worker->table, worker->name, worker->salary, worker->priority, hash);
+        rwlock_release_writelock(worker->mutex);
+
+    } else if (strcmp(worker->command, "search") == 0) {
+        uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        rwlock_acquire_readlock(worker->mutex);
+        search(worker->table, hash, worker->name);
+        rwlock_release_readlock(worker->mutex);
+
+    } else if (strcmp(worker->command, "update") == 0) {
+        uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        rwlock_acquire_writelock(worker->mutex);
+        update(worker->table, hash, worker->salary);
+        rwlock_release_writelock(worker->mutex);
+
+    } else if (strcmp(worker->command, "delete") == 0) {
+        uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        rwlock_acquire_writelock(worker->mutex);
+        delete(worker->table, hash);
+        rwlock_release_writelock(worker->mutex);
+
+    } else if (strcmp(worker->command, "print") == 0) {
+        rwlock_acquire_readlock(worker->mutex);
+        print_table(worker->table);
+        rwlock_release_readlock(worker->mutex);
+    }
+
+    return NULL;
+
+}
 
 int main(){
-    return -1;  
+    FILE *fp = fopen(COMMANDS, "r");
+    if (fp == NULL) {
+        perror("Failed to open commands.txt");
+        return -1;
+    }
+
+    char line[MAX_LINE];
+    pthread_t* threads = NULL;
+    WorkerArgs *args = NULL;
+    int thread_count = 0;
+
+    // ---- Read first line separately ----
+    if (fgets(line, sizeof(line), fp) != NULL) {
+        char label[50];
+        int parsed_thread_count;
+        int first_id;
+
+        // Example first line: threads,60,0
+        if (sscanf(line, "%49[^,],%d,%d", label, &parsed_thread_count, &first_id) == 3) {
+            thread_count = parsed_thread_count;
+            threads = (pthread_t*)malloc(sizeof(pthread_t) * thread_count);
+            args = (WorkerArgs *)malloc(sizeof(WorkerArgs) * thread_count);
+            if (threads == NULL || args == NULL) {
+                perror("Failed to allocate thread data");
+                fclose(fp);
+                free(threads);
+                free(args);
+                return -1;
+            }
+        }
+    }
+
+    if (threads == NULL || args == NULL || thread_count <= 0) {
+        fprintf(stderr, "Invalid thread configuration in first line.\n");
+        fclose(fp);
+        free(threads);
+        free(args);
+        return -1;
+    }
+
+    rwlock_t mutex;
+    rwlock_init(&mutex);
+
+    hashTable* table = (hashTable*)malloc(sizeof(hashTable));
+    table->head = NULL;
+    int counter = 0;
+
+    // ---- Read remaining lines one by one ----
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        char command[50];
+        char name[100];
+        int value;
+        int id;
+
+        // Example line: insert,Shigeru Miyamoto,85000,0
+        if (sscanf(line, "%49[^,],%99[^,],%d,%d", command, name, &value, &id) == 4) {
+            if (counter >= thread_count) {
+                break;
+            }
+
+            args[counter].table = table;
+            args[counter].mutex = &mutex;
+            strncpy(args[counter].command, command, sizeof(args[counter].command) - 1);
+            args[counter].command[sizeof(args[counter].command) - 1] = '\0';
+            strncpy(args[counter].name, name, sizeof(args[counter].name) - 1);
+            args[counter].name[sizeof(args[counter].name) - 1] = '\0';
+            args[counter].priority = id;
+            args[counter].salary = value;
+            pthread_create(&threads[counter], NULL, worker, &args[counter]);
+            counter++;
+        }
+    }
+
+    for(int i = 0; i < counter; i++){
+        pthread_join(threads[i], NULL);
+    }
+
+    print_table(table);
+
+
+    fclose(fp);
+    free(args);
+    free(threads);
+    return 0;
+     
 }
+
+

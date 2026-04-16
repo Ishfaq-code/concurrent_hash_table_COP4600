@@ -5,6 +5,7 @@
 #include <semaphore.h>
 
 #include "rwlock.h"
+#include "common_threads.h"
 
 
 void rwlock_init(rwlock_t *lock){
