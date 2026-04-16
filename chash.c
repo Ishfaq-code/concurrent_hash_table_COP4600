@@ -10,16 +10,29 @@
 #include "rwlock.h"
 
 typedef struct {
+    pthread_mutex_t mut;
+    pthread_cond_t cv;
+    int next_priority;
+} cv_ordering;
+
+typedef struct {
     hashTable *table;
     char command[16];
     char name[100];
     int priority;
     uint32_t salary;
     rwlock_t *mutex;
+    cv_ordering* order;
 } WorkerArgs;
 
 void* worker(void* args){
     WorkerArgs *worker = (WorkerArgs *)args;
+
+    pthread_mutex_lock(&worker->order->mut);
+    while (worker->priority != worker->order->next_priority) {
+        pthread_cond_wait(&worker->order->cv, &worker->order->mut);
+    }
+    pthread_mutex_unlock(&worker->order->mut);
 
     if (strcmp(worker->command, "insert") == 0) {
         uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
@@ -50,6 +63,11 @@ void* worker(void* args){
         print_table(worker->table);
         rwlock_release_readlock(worker->mutex);
     }
+
+    pthread_mutex_lock(&worker->order->mut);
+    worker->order->next_priority++;
+    pthread_cond_broadcast(&worker->order->cv);
+    pthread_mutex_unlock(&worker->order->mut);
 
     return NULL;
 
@@ -99,6 +117,11 @@ int main(){
     rwlock_t mutex;
     rwlock_init(&mutex);
 
+    cv_ordering order;
+    order.next_priority = 0;
+    pthread_mutex_init(&order.mut, NULL);
+    pthread_cond_init(&order.cv, NULL);
+
     hashTable* table = (hashTable*)malloc(sizeof(hashTable));
     table->head = NULL;
     int counter = 0;
@@ -124,6 +147,7 @@ int main(){
             args[counter].name[sizeof(args[counter].name) - 1] = '\0';
             args[counter].priority = id;
             args[counter].salary = value;
+            args[counter].order = &order;
             pthread_create(&threads[counter], NULL, worker, &args[counter]);
             counter++;
         }
@@ -132,6 +156,10 @@ int main(){
     for(int i = 0; i < counter; i++){
         pthread_join(threads[i], NULL);
     }
+    pthread_cond_destroy(&order.cv);
+    pthread_mutex_destroy(&order.mut); 
+
+
 
     print_table(table);
 
