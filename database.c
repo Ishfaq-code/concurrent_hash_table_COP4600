@@ -59,3 +59,30 @@ void delete(hashTable *hash_table, uint32_t hash){
     free(curr);
 
 }
+
+void update(hashTable *hash_table, uint32_t hash, uint32_t salary){
+    hashRecord* curr = hash_table->head;
+    hashRecord* prev = NULL;
+
+    while (curr != NULL && curr->hash < hash){
+        prev = curr;
+        curr = curr->next;
+    }
+
+    if(curr == NULL || curr->hash > hash){
+        printf("Updated failed. Entry %u not found.\n", hash);
+        return;
+    }
+
+     printf(
+        "Updated record %u from %u,%s,%u to %u,%s,%u\n",
+        hash,
+        hash,
+        curr->name,
+        curr->salary,
+        hash,
+        curr->name,
+        salary
+    );
+    curr->salary = salary;
+}
