@@ -26,5 +26,7 @@ void update(hashTable *hash_table, uint32_t hash, uint32_t salary);
 void print_table(hashTable *hash_table);
 // Search for a value in the table
 void search(hashTable *hash_table, uint32_t hash, const char* name);
+// Write table to database
+void write_table_log(FILE* lp, hashTable *hash_table);
 
 #endif

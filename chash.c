@@ -15,6 +15,8 @@
 
 
 FILE* lp;
+int lock_counter = 0;
+int release_counter = 0;
 
 void write_to_log(enum COMMAND cmd, WorkerArgs *worker, uint32_t hash){
     switch (cmd)
@@ -42,6 +44,7 @@ void write_to_log(enum COMMAND cmd, WorkerArgs *worker, uint32_t hash){
 void execute_hash(enum COMMAND cmd, WorkerArgs *worker,uint32_t hash, lock_fn acquire_lock, lock_fn release_lock, const char *lock_label){
     write_to_log(cmd, worker, hash);
     acquire_lock(worker->mutex);
+    lock_counter += 1;
     fprintf(lp, "%lld: Thread %d %s LOCK ACQUIRED\n", current_timestamp(), worker->priority, lock_label);
     switch (cmd)
     {
@@ -64,6 +67,7 @@ void execute_hash(enum COMMAND cmd, WorkerArgs *worker,uint32_t hash, lock_fn ac
         break;
     }
     release_lock(worker->mutex);
+    release_counter += 1;
     fprintf(lp, "%lld: Thread %d %s LOCK RELEASED\n", current_timestamp(), worker->priority, lock_label);
 }
 
@@ -209,10 +213,12 @@ int main(){
     pthread_cond_destroy(&order.cv);
     pthread_mutex_destroy(&order.mut); 
 
-
-
     print_table(table);
 
+    fprintf(lp, "\n");
+    fprintf(lp, "Number of lock acquisitions: %d\n", lock_counter);
+    fprintf(lp, "Number of lock releases: %d\n", release_counter);
+    write_table_log(lp, table);
 
     fclose(fp);
     free(args);

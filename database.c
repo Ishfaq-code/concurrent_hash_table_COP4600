@@ -106,3 +106,12 @@ void print_table(hashTable *hash_table){
     }
 
 }
+
+void write_table_log(FILE* lp, hashTable *hash_table){
+    hashRecord* curr = hash_table->head;
+    fprintf(lp, "Final Table:\n");
+    while(curr != NULL){
+        fprintf(lp, "%u,%s,%u\n", curr->hash, curr->name, curr->salary);
+        curr = curr->next;
+    }
+}
