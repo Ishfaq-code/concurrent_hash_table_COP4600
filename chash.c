@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sys/time.h>
+
 #define COMMANDS "commands.txt"
 #define MAX_LINE 256
+#define LOG "hash.log"
 
 #include "database.h"
 #include "hash.h"
@@ -25,43 +28,65 @@ typedef struct {
     cv_ordering* order;
 } WorkerArgs;
 
+FILE* lp;
+
+long long current_timestamp() {  
+  struct timeval te;  
+  gettimeofday(&te, NULL); // get current time  
+  long long microseconds = (te.tv_sec * 1000000) + te.tv_usec; // calculate milliseconds  
+  return microseconds;  
+} 
+
 void* worker(void* args){
     WorkerArgs *worker = (WorkerArgs *)args;
 
+    fprintf(lp, "%lld: Thread %d WAITING FOR MY TURN\n", current_timestamp(), worker->priority);
     pthread_mutex_lock(&worker->order->mut);
     while (worker->priority != worker->order->next_priority) {
         pthread_cond_wait(&worker->order->cv, &worker->order->mut);
     }
     pthread_mutex_unlock(&worker->order->mut);
+    fprintf(lp, "%lld: Thread %d AWAKENED FOR WORK\n", current_timestamp(), worker->priority);
 
     if (strcmp(worker->command, "insert") == 0) {
         uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        fprintf(lp, "%lld Thread: %d INSERT, %u,%s,%u\n", current_timestamp(), worker->priority, hash, worker->name, worker->salary);
         rwlock_acquire_writelock(worker->mutex);
+        fprintf(lp, "%lld: Thread %d WRITE LOCK ACQUIRED\n", current_timestamp(), worker->priority);
         insert(worker->table, worker->name, worker->salary, worker->priority, hash);
         rwlock_release_writelock(worker->mutex);
-
+        fprintf(lp, "%lld: Thread %d WRITE LOCK RELEASED\n", current_timestamp(), worker->priority);
     } else if (strcmp(worker->command, "search") == 0) {
         uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        fprintf(lp, "%lld Thread: %d SEARCH, %u,%s\n", current_timestamp(), worker->priority, hash, worker->name);
         rwlock_acquire_readlock(worker->mutex);
+        fprintf(lp, "%lld: Thread %d READ LOCK ACQUIRED\n", current_timestamp(), worker->priority);
         search(worker->table, hash, worker->name);
         rwlock_release_readlock(worker->mutex);
-
+        fprintf(lp, "%lld: Thread %d READ LOCK RELEASED\n", current_timestamp(), worker->priority);
     } else if (strcmp(worker->command, "update") == 0) {
         uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        fprintf(lp, "%lld Thread: %d UPDATE, %u,%s,%u\n", current_timestamp(), worker->priority, hash, worker->name, worker->salary);
         rwlock_acquire_writelock(worker->mutex);
+        fprintf(lp, "%lld: Thread %d WRITE LOCK ACQUIRED\n", current_timestamp(), worker->priority);
         update(worker->table, hash, worker->salary);
         rwlock_release_writelock(worker->mutex);
-
+        fprintf(lp, "%lld: Thread %d WRITE LOCK RELEASED\n", current_timestamp(), worker->priority);
     } else if (strcmp(worker->command, "delete") == 0) {
         uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
+        fprintf(lp, "%lld Thread: %d DELETE, %u,%s\n", current_timestamp(), worker->priority, hash, worker->name);
         rwlock_acquire_writelock(worker->mutex);
+        fprintf(lp, "%lld: Thread %d WRITE LOCK ACQUIRED\n", current_timestamp(), worker->priority);
         delete(worker->table, hash);
         rwlock_release_writelock(worker->mutex);
-
+        fprintf(lp, "%lld: Thread %d WRITE LOCK RELEASED\n", current_timestamp(), worker->priority);
     } else if (strcmp(worker->command, "print") == 0) {
+        fprintf(lp, "%lld Thread: %d PRINT\n", current_timestamp(), worker->priority);
         rwlock_acquire_readlock(worker->mutex);
+        fprintf(lp, "%lld: Thread %d READ LOCK ACQUIRED\n", current_timestamp(), worker->priority);
         print_table(worker->table);
         rwlock_release_readlock(worker->mutex);
+        fprintf(lp, "%lld: Thread %d READ LOCK RELEASED\n", current_timestamp(), worker->priority);
     }
 
     pthread_mutex_lock(&worker->order->mut);
@@ -77,6 +102,12 @@ int main(){
     FILE *fp = fopen(COMMANDS, "r");
     if (fp == NULL) {
         perror("Failed to open commands.txt");
+        return -1;
+    }
+
+    lp = fopen(LOG, "w");
+    if (lp == NULL) {
+        perror("Failed to open hash.log");
         return -1;
     }
 
