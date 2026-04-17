@@ -11,3 +11,7 @@ This is how the interaction was:
 Prompt (In Plan Mode): "Please plan out a way to read from a file named "commands.txt" which look's as the following: **COMMANDS.TXT PASTED**. The first line should be reading and creating the threads. The next few lines should be doing the operations.
 
 In plan mode (which is part of Opencode) it allows for the model to go through the codebase and make a plan of the implementation without editing the codebase. After making the plan, I put into build mode which designed the skelton of the file reading system.
+
+Chat GPT's model Codex 5.3 also used to for `Makefile` of this project. This is to properly create and link the files during execution. I did not have much experience with actual project infrasturcture for a language such as C, so I utilized AI to create this.
+
+Prompt (In Plan Mode): "Please plan out a Makefile for this project. I am writing a multi-file project in C. Show me the file and tell me how it works"
