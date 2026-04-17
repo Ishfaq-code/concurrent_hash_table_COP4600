@@ -10,6 +10,8 @@ typedef struct _rwlock_t {
     int readers;
 } rwlock_t;
 
+typedef void (*lock_fn)(rwlock_t *);
+
 void rwlock_init(rwlock_t *lock);
 void rwlock_acquire_readlock(rwlock_t *lock);
 void rwlock_release_readlock(rwlock_t *lock);
