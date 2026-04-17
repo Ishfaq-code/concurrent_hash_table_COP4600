@@ -7,13 +7,14 @@
 #include "rwlock.h"
 #include "database.h"
 
-
+// To enforce ordering between threads
 typedef struct {
     pthread_mutex_t mut;
     pthread_cond_t cv;
     int next_priority;
 } cv_ordering;
 
+// Worker information that threads need
 typedef struct {
     hashTable *table;
     char command[16];
@@ -24,6 +25,7 @@ typedef struct {
     cv_ordering* order;
 } WorkerArgs;
 
+// Enumeration for different commands
 enum COMMAND {
     INSERT = 0,
     SEARCH,

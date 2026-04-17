@@ -7,6 +7,7 @@
 #include "rwlock.h"
 #include "common_threads.h"
 
+// Taken from OSTEPS reader writer lock: https://github.com/remzi-arpacidusseau/ostep-code/blob/master/threads-sema/rwlock.c
 
 void rwlock_init(rwlock_t *lock){
     lock->readers = 0;

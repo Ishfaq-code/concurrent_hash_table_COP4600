@@ -89,20 +89,11 @@ void update(hashTable *hash_table, uint32_t hash, uint32_t salary){
     }
 
     if(curr == NULL || curr->hash > hash){
-        printf("Updated failed. Entry %u not found.\n", hash);
+        printf("Update failed. Entry %u not found.\n", hash);
         return;
     }
 
-     printf(
-        "Updated record %u from %u,%s,%u to %u,%s,%u\n",
-        hash,
-        hash,
-        curr->name,
-        curr->salary,
-        hash,
-        curr->name,
-        salary
-    );
+    printf("Updated record %u from %u,%s,%u to %u,%s,%u\n",hash, hash, curr->name, curr->salary, hash, curr->name, salary);
     curr->salary = salary;
 }
 

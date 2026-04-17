@@ -85,27 +85,34 @@ void interpret_command(char* raw_command, WorkerArgs *worker,uint32_t hash){
     }
 }
 
+void thread_wait(WorkerArgs* worker){
+    pthread_mutex_lock(&worker->order->mut);
+    while (worker->priority != worker->order->next_priority) {
+        pthread_cond_wait(&worker->order->cv, &worker->order->mut);
+    }
+    pthread_mutex_unlock(&worker->order->mut);
+}
+
+void thread_signal(WorkerArgs* worker){
+    pthread_mutex_lock(&worker->order->mut);
+    worker->order->next_priority++;
+    pthread_cond_broadcast(&worker->order->cv);
+    pthread_mutex_unlock(&worker->order->mut);
+}
+
 
 
 void* worker(void* args){
     WorkerArgs *worker = (WorkerArgs *)args;
 
     fprintf(lp, "%lld: Thread %d WAITING FOR MY TURN\n", current_timestamp(), worker->priority);
-    pthread_mutex_lock(&worker->order->mut);
-    while (worker->priority != worker->order->next_priority) {
-        pthread_cond_wait(&worker->order->cv, &worker->order->mut);
-    }
-    pthread_mutex_unlock(&worker->order->mut);
+    thread_wait(worker);
     fprintf(lp, "%lld: Thread %d AWAKENED FOR WORK\n", current_timestamp(), worker->priority);
     
     uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
     interpret_command(worker->command, worker, hash);
 
-    pthread_mutex_lock(&worker->order->mut);
-    worker->order->next_priority++;
-    pthread_cond_broadcast(&worker->order->cv);
-    pthread_mutex_unlock(&worker->order->mut);
-
+    thread_signal(worker);
     return NULL;
 
 }

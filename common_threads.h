@@ -1,3 +1,6 @@
+// File taken from OSTEPS Github: https://github.com/remzi-arpacidusseau/ostep-code/blob/master/intro/common_threads.h
+
+
 #ifndef __common_threads_h__
 #define __common_threads_h__
 
