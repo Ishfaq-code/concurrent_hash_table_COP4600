@@ -12,63 +12,41 @@
 #include "rwlock.h"
 #include "common.h"
 #include "chash.h"
+#include "log.h"
 
 
-FILE* lp;
 int lock_counter = 0;
 int release_counter = 0;
 
-void write_to_log(enum COMMAND cmd, WorkerArgs *worker, uint32_t hash){
-    switch (cmd)
-    {
-    case 0:
-        fprintf(lp, "%lld Thread: %d INSERT, %u,%s,%u\n", current_timestamp(), worker->priority, hash, worker->name, worker->salary);
-        break;
-    case 1:
-        fprintf(lp, "%lld Thread: %d SEARCH, %u,%s\n", current_timestamp(), worker->priority, hash, worker->name);
-        break;
-    case 2:
-        fprintf(lp, "%lld Thread: %d UPDATE, %u,%s,%u\n", current_timestamp(), worker->priority, hash, worker->name, worker->salary);
-        break;
-    case 3:
-        fprintf(lp, "%lld Thread: %d DELETE, %u,%s\n", current_timestamp(), worker->priority, hash, worker->name);
-        break;
-    case 4:
-        fprintf(lp, "%lld Thread: %d PRINT\n", current_timestamp(), worker->priority);
-        break;
-    default:
-        break;
-    }
-}
 
 void execute_hash(enum COMMAND cmd, WorkerArgs *worker,uint32_t hash, lock_fn acquire_lock, lock_fn release_lock, const char *lock_label){
-    write_to_log(cmd, worker, hash);
     acquire_lock(worker->mutex);
+    notify_thread_action(cmd, worker->priority, hash, worker->name, worker->salary);
+    notify_lock(lock_label, worker->priority, "ACQUIRED");
     lock_counter += 1;
-    fprintf(lp, "%lld: Thread %d %s LOCK ACQUIRED\n", current_timestamp(), worker->priority, lock_label);
     switch (cmd)
     {
     case 0:
         insert(worker->table, worker->name, worker->salary, worker->priority, hash);
         break;
     case 1:
-        search(worker->table, hash, worker->name);
+        search(worker->table, hash, worker->name, worker->salary, worker->priority);
         break;
     case 2:
-        update(worker->table, hash, worker->salary);
+        update(worker->table, hash, worker->name, worker->salary, worker->priority);
         break;
     case 3:
-        delete(worker->table, hash);
+        delete(worker->table, hash, worker->name, worker->salary, worker->priority);
         break;
     case 4:
-        print_table(worker->table);
+        print_table(worker->table, hash, worker->name, worker->salary, worker->priority);
         break;
     default:
         break;
     }
     release_lock(worker->mutex);
+    notify_lock(lock_label, worker->priority, "RELEASED");
     release_counter += 1;
-    fprintf(lp, "%lld: Thread %d %s LOCK RELEASED\n", current_timestamp(), worker->priority, lock_label);
 }
 
 void interpret_command(char* raw_command, WorkerArgs *worker,uint32_t hash){
@@ -109,14 +87,15 @@ void thread_signal(WorkerArgs* worker){
 void* worker(void* args){
     WorkerArgs *worker = (WorkerArgs *)args;
 
-    fprintf(lp, "%lld: Thread %d WAITING FOR MY TURN\n", current_timestamp(), worker->priority);
+    write_wait(worker->priority);
     thread_wait(worker);
-    fprintf(lp, "%lld: Thread %d AWAKENED FOR WORK\n", current_timestamp(), worker->priority);
+    thread_signal(worker);
+    write_awake(worker->priority);
+
     
     uint32_t hash = jenkins_one_at_a_time_hash(worker->name, strlen(worker->name));
     interpret_command(worker->command, worker, hash);
 
-    thread_signal(worker);
     return NULL;
 
 }
@@ -128,9 +107,7 @@ int main(){
         return -1;
     }
 
-    lp = fopen(LOG, "w");
-    if (lp == NULL) {
-        perror("Failed to open hash.log");
+    if(init_log() == -1){
         return -1;
     }
 
@@ -180,7 +157,6 @@ int main(){
     table->head = NULL;
     int counter = 0;
 
-    // ---- Read remaining lines one by one ----
     while (fgets(line, sizeof(line), fp) != NULL) {
         char command[50];
         char name[100];
@@ -213,18 +189,15 @@ int main(){
     pthread_cond_destroy(&order.cv);
     pthread_mutex_destroy(&order.mut); 
 
-    print_table(table);
+    print_table(table, 0, "", 0, -1);
 
-    fprintf(lp, "\n");
-    fprintf(lp, "Number of lock acquisitions: %d\n", lock_counter);
-    fprintf(lp, "Number of lock releases: %d\n", release_counter);
-    write_table_log(lp, table);
+    print_lock_count(lock_counter, release_counter);
+    print_final_table(table);
 
     fclose(fp);
     free(args);
     free(threads);
+    close_lp();
     return 0;
      
 }
-
-

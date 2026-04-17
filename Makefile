@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c11 -D_XOPEN_SOURCE=700
 LDFLAGS = -pthread
 
-OBJS = chash.o database.o hash.o rwlock.o common.o
+OBJS = chash.o database.o hash.o rwlock.o common.o log.o
 
 all: chash
 
