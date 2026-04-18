@@ -1,3 +1,11 @@
+/*
+    AUTHOR: ISHFAQ MOHSIN
+    COP 4600
+    CONCURRENT HASH TABLE
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
