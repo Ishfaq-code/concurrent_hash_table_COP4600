@@ -18,16 +18,16 @@ typedef struct hash_table_struct {
 } hashTable;
 
 // Insert a Value into a Hash table, fails if it already exists
-void insert(hashTable *hash_table, const char* name, uint32_t salary, int priority, uint32_t hash);
+void insert(hashTable *hash_table, const char* name, uint32_t salary, uint32_t hash);
 // Delete a value from the table, fails if value does not exist
-void delete(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority);
+void delete(hashTable *hash_table, uint32_t hash);
 // Update a value that exists in the table
-void update(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority);
+void update(hashTable *hash_table, uint32_t hash, uint32_t salary);
 // Print the entire table
-void print_table(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority);
+void print_table(hashTable *hash_table);
 // Search for a value in the table
-void search(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority);
+void search(hashTable *hash_table, uint32_t hash, const char* name);
 // Write table to database
-void write_table_log(FILE* lp, hashTable *hash_table, int priority);
+void write_table_log(FILE* lp, hashTable *hash_table);
 
 #endif

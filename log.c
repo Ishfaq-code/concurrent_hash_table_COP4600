@@ -19,7 +19,7 @@ int init_log(){
     return 1;
 }
 
-void notify_lock(char* lock_type, int thread_id, char* action){
+void notify_lock(const char* lock_type, int thread_id, char* action){
     fprintf(lp, "%lld: THREAD %d %s %s\n", current_timestamp(), thread_id, lock_type, action);
 }
 
@@ -61,7 +61,7 @@ void print_lock_count(int lock_count, int release_count){
 }
 
 void print_final_table(hashTable *hash_table){
-    write_table_log(lp, hash_table, 0);
+    write_table_log(lp, hash_table);
 }
 
 void close_lp(){

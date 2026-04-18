@@ -27,19 +27,19 @@ void execute_hash(enum COMMAND cmd, WorkerArgs *worker,uint32_t hash, lock_fn ac
     switch (cmd)
     {
     case 0:
-        insert(worker->table, worker->name, worker->salary, worker->priority, hash);
+        insert(worker->table, worker->name, worker->salary, hash);
         break;
     case 1:
-        search(worker->table, hash, worker->name, worker->salary, worker->priority);
+        search(worker->table, hash, worker->name);
         break;
     case 2:
-        update(worker->table, hash, worker->name, worker->salary, worker->priority);
+        update(worker->table, hash, worker->salary);
         break;
     case 3:
-        delete(worker->table, hash, worker->name, worker->salary, worker->priority);
+        delete(worker->table, hash);
         break;
     case 4:
-        print_table(worker->table, hash, worker->name, worker->salary, worker->priority);
+        print_table(worker->table);
         break;
     default:
         break;
@@ -189,7 +189,7 @@ int main(){
     pthread_cond_destroy(&order.cv);
     pthread_mutex_destroy(&order.mut); 
 
-    print_table(table, 0, "", 0, -1);
+    print_table(table);
 
     print_lock_count(lock_counter, release_counter);
     print_final_table(table);

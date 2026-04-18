@@ -8,7 +8,7 @@
 #include "log.h"
 #include "chash.h"
 
-void insert(hashTable *hash_table, const char* name, uint32_t salary, int priority, uint32_t hash){
+void insert(hashTable *hash_table, const char* name, uint32_t salary, uint32_t hash){
     hashRecord* curr = hash_table->head;
     hashRecord* prev = NULL;
 
@@ -37,7 +37,7 @@ void insert(hashTable *hash_table, const char* name, uint32_t salary, int priori
     printf("Inserted %u,%s,%u\n", new_record->hash, new_record->name, new_record->salary);
 }
 
-void delete(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority){
+void delete(hashTable *hash_table, uint32_t hash){
     hashRecord* curr = hash_table->head;
     hashRecord* prev = NULL;
 
@@ -63,12 +63,10 @@ void delete(hashTable *hash_table, uint32_t hash, const char* name, uint32_t sal
 
 }
 
-void search(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority){
+void search(hashTable *hash_table, uint32_t hash, const char* name){
     hashRecord* curr = hash_table->head;
-    hashRecord* prev = NULL;
 
     while (curr != NULL && curr->hash < hash){
-        prev = curr;
         curr = curr->next;
     }
 
@@ -81,12 +79,10 @@ void search(hashTable *hash_table, uint32_t hash, const char* name, uint32_t sal
 
 }
 
-void update(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority){
+void update(hashTable *hash_table, uint32_t hash, uint32_t salary){
     hashRecord* curr = hash_table->head;
-    hashRecord* prev = NULL;
 
     while (curr != NULL && curr->hash < hash){
-        prev = curr;
         curr = curr->next;
     }
 
@@ -99,7 +95,7 @@ void update(hashTable *hash_table, uint32_t hash, const char* name, uint32_t sal
     curr->salary = salary;
 }
 
-void print_table(hashTable *hash_table, uint32_t hash, const char* name, uint32_t salary, int priority){
+void print_table(hashTable *hash_table){
     hashRecord* curr = hash_table->head;
     printf("Current Database:\n");
     while(curr != NULL){
@@ -109,7 +105,7 @@ void print_table(hashTable *hash_table, uint32_t hash, const char* name, uint32_
 
 }
 
-void write_table_log(FILE* lp, hashTable *hash_table, int priority){
+void write_table_log(FILE* lp, hashTable *hash_table){
     hashRecord* curr = hash_table->head;
     fprintf(lp, "Final Table:\n");
     while(curr != NULL){
